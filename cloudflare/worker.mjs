@@ -56,12 +56,12 @@ export function createWorker({ fetchPush = fetch, pushTestDelayMs = 8000 } = {})
       const url = new URL(request.url), path = url.pathname;
       try {
         if (request.method === 'GET' && path === '/health') {
-          return json({ ok: true, ready: Boolean(env.DB && env.PAIRING_KEY?.length >= 16) });
+          return json({ ok: true, ready: Boolean(env.DB && env.PAIRING_KEY?.length >= 10) });
         }
         if (!path.startsWith('/v1/')) return env.ASSETS.fetch(request);
         requireValue(env.DB, 503, 'Bind the D1 database as DB in Cloudflare.');
-        requireValue(typeof env.PAIRING_KEY === 'string' && env.PAIRING_KEY.length >= 16, 503,
-          'Set PAIRING_KEY in Cloudflare Variables & Secrets using at least 16 characters.');
+        requireValue(typeof env.PAIRING_KEY === 'string' && env.PAIRING_KEY.length >= 10, 503,
+          'Set PAIRING_KEY in Cloudflare Variables & Secrets using at least 10 characters.');
         const db = env.DB;
         const subject = env.VAPID_SUBJECT || url.origin;
         if (request.method === 'GET' && path === '/v1/config') {

@@ -12,7 +12,7 @@
   "dependencies": { "web-push": "3.6.7" },
   "cloudflare": {
     "bindings": {
-      "PAIRING_KEY": { "description": "Choose a private key of at least 16 characters. Both coaches enter this same key once when pairing their phones." },
+      "PAIRING_KEY": { "description": "Choose a private key of at least 10 characters. Both coaches enter this same key once when pairing their phones." },
       "DB": { "description": "Stores the two coach pairings, notification subscriptions, calls, and notification keys." }
     }
   },

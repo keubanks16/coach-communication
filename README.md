@@ -6,7 +6,7 @@
 
 [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/keubanks16/coach-communication)
 
-Upload the updated source first. Use `npm run deploy` and supply your own `PAIRING_KEY` secret of at least 16 characters. Cloudflare creates/resolves the database and applies migrations. Notification keys are generated automatically and saved in D1. Free-tier quotas apply. No live deployment or phone/watch delivery verification has been performed from this session.
+Upload the updated source first. Use `npm run deploy` and supply your own `PAIRING_KEY` secret of at least 10 characters. Cloudflare creates/resolves the database and applies migrations. Notification keys are generated automatically and saved in D1. Free-tier quotas apply. No live deployment or phone/watch delivery verification has been performed from this session.
 
 ```sh
 npm ci

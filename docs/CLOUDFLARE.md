@@ -16,7 +16,7 @@ After the updated files are in GitHub, open:
 
 1. Sign in to or create a Cloudflare account and stay on **Workers Free**.
 2. Authorize the GitHub connection when Cloudflare asks. The deployment button can create a copy of the public repository in your GitHub account; select an available name if it asks. If you want to connect the original repository without a copy, use the dashboard steps below.
-3. For **PAIRING_KEY**, choose your own private value with at least 16 characters. Both coaches enter this key when pairing. Do not put the real value in GitHub.
+3. For **PAIRING_KEY**, choose your own private value with at least 10 characters. Both coaches enter this key when pairing. Do not put the real value in GitHub.
 4. Keep the deployment command as **`npm run deploy`**. There is no front-end build command required. Cloudflare installs the packages from the root package lock.
 5. Deploy and wait for the build to finish. The D1 database is provisioned or resolved and migrations are applied before the Worker is published.
 6. Open the HTTPS `workers.dev` URL shown by Cloudflare. This is your app link for both coaches.

@@ -66,7 +66,7 @@ export function createPush(env = process.env) {
 
 export function createRelay({ databasePath = ':memory:', pairingKey, push = createPush(),
   webPush = { configured: false, publicKey: null, send: async () => 'unconfigured' }, pushTestDelayMs = 8000 } = {}) {
-  requireValue(typeof pairingKey === 'string' && pairingKey.length >= 16, 500, 'PAIRING_KEY must contain at least 16 characters.');
+  requireValue(typeof pairingKey === 'string' && pairingKey.length >= 10, 500, 'PAIRING_KEY must contain at least 10 characters.');
   if (databasePath !== ':memory:') mkdirSync(dirname(databasePath), { recursive: true });
   const db = new DatabaseSync(databasePath);
   db.exec(`PRAGMA journal_mode=WAL;

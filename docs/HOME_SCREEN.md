@@ -14,7 +14,7 @@ For a local check:
 
 ```sh
 npm ci --prefix relay
-export PAIRING_KEY='choose-a-long-secret-of-at-least-16-characters'
+export PAIRING_KEY='choose-a-long-secret-of-at-least-10-characters'
 export VAPID_SUBJECT='mailto:your-real-email@example.com'
 node relay/server.mjs
 ```
