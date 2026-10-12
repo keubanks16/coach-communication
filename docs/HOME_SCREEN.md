@@ -1,5 +1,7 @@
 # Home Screen app → Apple Watch notifications
 
+**Free hosting is now supported.** Follow [CLOUDFLARE.md](CLOUDFLARE.md) for the Cloudflare Workers + D1 deployment. The Node/Render hosting instructions below describe the earlier server version and are optional. The iPhone installation and game-use steps still apply.
+
 This version runs on the iPhone and sends Web Push notifications. iOS can mirror those notifications to the paired Apple Watch. Coaches send and acknowledge calls on their phones, and read alerts on their watches. It does not install a native watch interface or let a coach send from the watch itself.
 
 **You do not need a Mac, Xcode, or an Apple Developer Program account for this web version.** You do need a live HTTPS server and two iPhones with compatible paired watches. Apple supports Home Screen Web Push on iOS 16.4 or newer. The ZIP must be deployed; a downloaded HTML/ZIP file cannot provide background notifications.

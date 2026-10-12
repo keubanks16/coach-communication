@@ -117,7 +117,7 @@ async function refresh() {
     const result = await api('/v1/messages');
     if (credentials?.id !== deviceID) return;
     feed = result; messages = result.messages;
-    const online = result.peerLastSeen && Date.now() - Date.parse(result.peerLastSeen) < 12000;
+    const online = result.peerLastSeen && Date.now() - Date.parse(result.peerLastSeen) < 20000;
     $('connection').textContent = !result.peerRole ? 'Waiting for other coach' : online ? 'Both coaches online' : 'Other coach inactive';
     $('connection-dot').classList.toggle('online', Boolean(online));
     renderMessages();

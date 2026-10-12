@@ -1,5 +1,20 @@
 # Coach Comms
 
+## Free Cloudflare version
+
+**Use this version for free hosting:** the Home Screen web app now runs on Cloudflare Workers with persistent D1 storage. Both coaches send calls from their iPhones and can receive mirrored notifications on Apple Watch. [Cloudflare setup instructions](docs/CLOUDFLARE.md) cover deployment, pairing and wrist-alert testing.
+
+[Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/keubanks16/coach-communication)
+
+Upload the updated source first. Use `npm run deploy` and supply your own `PAIRING_KEY` secret of at least 16 characters. Cloudflare creates/resolves the database and applies migrations. Notification keys are generated automatically and saved in D1. Free-tier quotas apply. No live deployment or phone/watch delivery verification has been performed from this session.
+
+```sh
+npm ci
+npm test
+```
+
+The checks include the real Cloudflare local runtime, D1, and the encrypted Web Push fetch path with a mocked push endpoint. The root `package.json` and `wrangler.json` configure Cloudflare. The older Node and native watch versions remain below for reference.
+
 ## NEW: iPhone Home Screen version
 
 The repo now also includes an installable web app: send calls from either iPhone and receive notifications mirrored to the paired Apple Watch. **No Mac or native-app signing is needed for the web version.** Follow [Home Screen setup](docs/HOME_SCREEN.md) to deploy it over HTTPS, add it to both phones, and enable notifications. The web app is served by `relay/server.mjs`; the `web/` folder contains the interface, service worker, manifest and icons. `render.yaml` provides an optional deployment blueprint with persistent disk.
