@@ -83,5 +83,3 @@ xcodebuild -project CoachCommunication.xcodeproj -scheme CoachCommunication \
 - [watchOS notifications](https://developer.apple.com/documentation/watchos-apps/enabling-and-receiving-notifications)
 - [APNs requests](https://developer.apple.com/documentation/usernotifications/sending-notification-requests-to-apns)
 - [Foreground networking lifecycle](https://developer.apple.com/documentation/watchos-apps/making-default-and-ephemeral-requests)
-- 
- 
