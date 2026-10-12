@@ -1,0 +1,28 @@
+# Upload this repository to GitHub, then use Render's New > Blueprint.
+# A service with persistent disk requires a paid plan. Review Render's price before creating it.
+services:
+  - type: web
+    name: coach-communication
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: npm ci --prefix relay --omit=dev
+    startCommand: node relay/server.mjs
+    healthCheckPath: /health
+    disk:
+      name: coach-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_PATH
+        value: /var/data/coach.sqlite
+      - key: VAPID_KEY_PATH
+        value: /var/data/vapid.json
+      - key: PAIRING_KEY
+        generateValue: true
+      - key: VAPID_SUBJECT
+        sync: false

@@ -2,6 +2,14 @@
   "name": "coach-communication-relay",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.13" },
-  "scripts": { "start": "node server.mjs", "test": "node --test test.mjs" }
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test.mjs"
+  },
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
 }

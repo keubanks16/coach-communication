@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Coach Comms">
+  <meta name="description" content="Quiet calls between first- and third-base coaches.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <title>Coach Comms</title>
+</head>
+<body>
+  <div class="app">
+    <header><div class="brand"><span class="monogram">CC</span><div><p class="eyebrow">FIRST ↔ THIRD</p><h1>Coach Comms</h1></div></div><span class="badge">GAME DAY</span></header>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section id="pair-screen">
+      <div class="intro"><p class="eyebrow">KEEP THE CALL BETWEEN COACHES</p><h2>Same game.<br>Same page.</h2><p>Tap a call on your phone. Read it on your wrist.</p></div>
+      <form id="pair-form" class="panel">
+        <h3>Choose your coach position</h3>
+        <div class="role-options">
+          <label><input type="radio" name="role" value="First base"><span><b>1B</b>First base</span></label>
+          <label><input type="radio" name="role" value="Third base" checked><span><b>3B</b>Third base</span></label>
+        </div>
+        <label class="field-label" for="pair-key">Team pairing key</label>
+        <input id="pair-key" type="password" required minlength="16" autocomplete="off" placeholder="Enter your shared key">
+        <p class="hint">Both coaches use the same key and choose different positions.</p>
+        <button class="primary wide" id="pair-submit" type="submit">Join the game <span>→</span></button>
+      </form>
+      <div class="install-card"><b>Make it a Home Screen app</b><p>In Safari, tap Share → Add to Home Screen. Open the new icon, pair your phone, then enable notifications.</p></div>
+    </section>
+    <section id="game-screen" hidden>
+      <div class="game-head"><div><p class="eyebrow">YOUR POSITION</p><h2 id="your-role">Third base</h2></div><div class="connection"><span id="connection-dot"></span><span id="connection">Connecting…</span></div></div>
+      <nav aria-label="App sections"><button class="selected" data-tab="calls" type="button">Calls</button><button data-tab="history" type="button">History</button><button data-tab="setup" type="button">Setup</button></nav>
+      <div id="calls-tab">
+        <div id="incoming" class="incoming" aria-live="polite" hidden><p class="eyebrow" id="incoming-from"></p><h2 id="incoming-text"></h2><div class="incoming-bottom"><span id="incoming-time"></span><button id="ack" class="primary" type="button">Got it ✓</button></div></div>
+        <div class="section-head"><h3>Quick calls</h3><span>ONE TAP TO SEND</span></div>
+        <div id="call-grid" class="call-grid"></div>
+        <form id="custom-form" class="custom"><label class="field-label" for="custom-text">Or send your own call</label><div><input id="custom-text" maxlength="120" placeholder="Type a short message" required autocomplete="off"><button type="submit" class="primary">Send</button></div></form>
+        <div id="last-sent" class="last-sent" aria-live="polite" hidden><span class="eyebrow">LAST SENT</span><strong id="sent-text"></strong><span id="sent-status"></span></div>
+        <button id="retry" class="secondary wide" type="button" hidden>Retry unconfirmed send</button>
+        <p class="footnote">Wait for “Got it” before assuming a call was understood. Calls expire after 60 seconds.</p>
+      </div>
+      <div id="history-tab" hidden><div class="section-head"><h3>Recent calls</h3><span>LAST 50</span></div><div id="history-list"></div></div>
+      <div id="setup-tab" hidden>
+        <section class="panel"><p class="eyebrow">WRIST ALERTS</p><h3>Your phone. Your watch.</h3><ol><li>Add this app to your iPhone Home Screen from Safari.</li><li>Open it from the new icon and allow notifications.</li><li>Allow this app’s alerts to mirror in the Watch app on your iPhone.</li><li>Turn on your watch’s Silent Mode. Lock your iPhone to receive alerts on the watch.</li></ol><p id="notification-status" class="hint"></p><button id="enable-notifications" class="primary wide" type="button">Enable notifications</button><button id="test-notification" class="secondary wide" type="button">Send a wrist-alert test</button><button id="disable-notifications" class="text-button" type="button">Turn off this app’s push alerts</button><p class="hint">Test with your iPhone locked and your watch unlocked. Focus and watch settings can affect delivery.</p></section>
+        <section class="panel"><h3>Edit quick calls</h3><label class="field-label" for="preset-editor">One call per line · up to 12 calls</label><textarea id="preset-editor" rows="6" maxlength="1451"></textarea><button id="save-presets" class="secondary wide" type="button">Save quick calls</button></section>
+        <section class="panel"><h3>Device pairing</h3><p class="hint">Unpair this phone before pairing a replacement. Your phone and native watch app share the same coach slot.</p><button id="unpair" class="danger wide" type="button">Unpair this phone</button></section>
+      </div>
+    </section>
+    <footer><span class="mini-diamond">◇</span> QUIET CALLS. CLEAR CONFIRMATIONS.</footer>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

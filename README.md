@@ -1,5 +1,18 @@
 # Coach Comms
 
+## NEW: iPhone Home Screen version
+
+The repo now also includes an installable web app: send calls from either iPhone and receive notifications mirrored to the paired Apple Watch. **No Mac or native-app signing is needed for the web version.** Follow [Home Screen setup](docs/HOME_SCREEN.md) to deploy it over HTTPS, add it to both phones, and enable notifications. The web app is served by `relay/server.mjs`; the `web/` folder contains the interface, service worker, manifest and icons. `render.yaml` provides an optional deployment blueprint with persistent disk.
+
+The web app uses one coach slot per iPhone; unpair an existing native-watch pairing before switching that role to the phone. Sending and acknowledging from the watch itself continues to require the native app described below. Background Web Push and on-watch delivery still require real-device testing.
+
+```sh
+npm ci --prefix relay
+npm test --prefix relay
+```
+
+## Native watch version
+
 A native Apple Watch app for quiet, two-way communication between first- and third-base coaches. Each coach wears an ordinary watch and taps a preset call. The other coach sees the call and taps **Got it**. Default calls: **Steal, Hold, Send him, Bunt, Hit & run, Time out**. Calls can be edited, and custom messages are supported.
 
 ## What is included
@@ -10,7 +23,7 @@ A native Apple Watch app for quiet, two-way communication between first- and thi
 - Sent, Received, Got it, and Expired states. “Sent” means stored by the relay, not read by the coach.
 - Calls expire after 60 seconds. Older incoming calls do not replace an acknowledged newer call.
 - Two coach positions protected by a shared setup key; each watch receives its own bearer credential stored in Keychain.
-- A Node 24 relay with SQLite persistence and no package dependencies. One relay is one pair of coaches.
+- A Node 24 relay with SQLite persistence and the `web-push` dependency for Home Screen notifications. One relay is one pair of coaches.
 - Relay integration tests and a macOS GitHub Actions simulator build.
 
 **This repository contains source, not an installed or signed app.** The relay must be hosted, and Apple signing is required to install on real watches. Push alerts require APNs credentials. Source and relay tests can be checked here; simulator compilation and physical-watch behavior require Apple tooling. Check the repository’s **Actions** tab for the watch build result.
@@ -35,6 +48,7 @@ This uses internet messaging, not a direct watch-to-watch radio. Foreground refr
 
 ```sh
 cd relay
+npm ci
 npm test
 ```
 

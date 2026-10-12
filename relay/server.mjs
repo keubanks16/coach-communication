@@ -3,8 +3,9 @@ import http2 from 'node:http2';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomUUID, createHash, timingSafeEqual, sign } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createWebPush, validSubscription } from './web-push.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const secretEqual = (a, b) => timingSafeEqual(Buffer.from(digest(a)), Buffer.from(digest(b)));
@@ -63,7 +64,8 @@ export function createPush(env = process.env) {
   return { configured, send };
 }
 
-export function createRelay({ databasePath = ':memory:', pairingKey, push = createPush() } = {}) {
+export function createRelay({ databasePath = ':memory:', pairingKey, push = createPush(),
+  webPush = { configured: false, publicKey: null, send: async () => 'unconfigured' }, pushTestDelayMs = 8000 } = {}) {
   requireValue(typeof pairingKey === 'string' && pairingKey.length >= 16, 500, 'PAIRING_KEY must contain at least 16 characters.');
   if (databasePath !== ':memory:') mkdirSync(dirname(databasePath), { recursive: true });
   const db = new DatabaseSync(databasePath);
@@ -76,7 +78,11 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
       sender_role TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL,
       expires_at TEXT NOT NULL, received_at TEXT, acknowledged_at TEXT, push_status TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS messages_recipient ON messages(recipient_id, created_at);`);
+  if (!db.prepare('PRAGMA table_info(devices)').all().some(column => column.name === 'web_subscription')) {
+    db.exec('ALTER TABLE devices ADD COLUMN web_subscription TEXT');
+  }
   const rates = new Map();
+  const pushTestTimers = new Set();
   function rate(key, max, window = 60000) {
     const now = Date.now();
     // Bounded time-based cleanup, including failed authentication attempts.
@@ -108,13 +114,35 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
     try {
       const path = new URL(req.url, 'http://localhost').pathname;
       if (req.method === 'GET' && path === '/health') return reply(200, { ok: true });
+      const assets = {
+        '/': ['index.html', 'text/html; charset=utf-8'],
+        '/index.html': ['index.html', 'text/html; charset=utf-8'],
+        '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
+        '/style.css': ['style.css', 'text/css; charset=utf-8'],
+        '/sw.js': ['sw.js', 'text/javascript; charset=utf-8'],
+        '/manifest.webmanifest': ['manifest.webmanifest', 'application/manifest+json'],
+        '/icon-192.png': ['icon-192.png', 'image/png'],
+        '/icon-512.png': ['icon-512.png', 'image/png'],
+        '/apple-touch-icon.png': ['apple-touch-icon.png', 'image/png']
+      };
+      if ((req.method === 'GET' || req.method === 'HEAD') && assets[path]) {
+        const [file, type] = assets[path];
+        const content = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../web', file));
+        res.writeHead(200, {
+          'Content-Type': type, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'none'",
+          ...(path === '/sw.js' ? { 'Service-Worker-Allowed': '/' } : {})
+        });
+        return res.end(req.method === 'HEAD' ? undefined : content);
+      }
+      if (req.method === 'GET' && path === '/v1/config') return reply(200, { publicKey: webPush.publicKey });
       if (req.method === 'POST' && path === '/v1/pair') {
         rate(`pair:${req.socket.remoteAddress}`, 10);
         const data = await body(req);
         requireValue(typeof data.key === 'string' && secretEqual(data.key, pairingKey), 403, 'Incorrect pairing key.');
         requireValue(validRoles.includes(data.role), 400, 'Choose First base or Third base.');
         requireValue(!db.prepare('SELECT id FROM devices WHERE role=?').get(data.role), 409,
-          'That coach position is already paired. Unpair the old watch first.');
+          'That coach position is already paired. Unpair the old device first.');
         const token = randomBytes(32).toString('hex'), id = randomUUID();
         db.prepare('INSERT INTO devices(id,token_hash,role,seen_at) VALUES(?,?,?,?)')
           .run(id, digest(token), data.role, new Date().toISOString());
@@ -123,7 +151,7 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
       const bearer = req.headers.authorization?.match(/^Bearer ([a-f0-9]{64})$/)?.[1];
       const device = bearer && db.prepare('SELECT * FROM devices WHERE token_hash=?').get(digest(bearer));
       if (!device) rate(`auth:${req.socket.remoteAddress}`, 60);
-      requireValue(device, 401, 'Pair this watch again.');
+      requireValue(device, 401, 'Pair this device again.');
       rate(`device:${device.id}`, 180);
       db.prepare('UPDATE devices SET seen_at=? WHERE id=?').run(new Date().toISOString(), device.id);
       if (req.method === 'DELETE' && path === '/v1/device') {
@@ -136,12 +164,45 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
         db.prepare('UPDATE devices SET push_token=? WHERE id=?').run(data.token, device.id);
         return reply(200, { ok: true });
       }
+      if (req.method === 'POST' && path === '/v1/web-subscription') {
+        const data = await body(req);
+        requireValue(validSubscription(data.subscription), 400, 'Invalid browser push subscription.');
+        db.prepare('UPDATE devices SET web_subscription=? WHERE id=?').run(JSON.stringify(data.subscription), device.id);
+        return reply(200, { ok: true });
+      }
+      if (req.method === 'DELETE' && path === '/v1/web-subscription') {
+        db.prepare('UPDATE devices SET web_subscription=NULL WHERE id=?').run(device.id);
+        return reply(200, { ok: true });
+      }
+      if (req.method === 'POST' && path === '/v1/push-test') {
+        rate(`push-test:${device.id}`, 5);
+        requireValue(webPush.configured && device.web_subscription, 409, 'Enable notifications on this device first.');
+        const timer = setTimeout(async () => {
+          pushTestTimers.delete(timer);
+          try {
+            const current = db.prepare('SELECT web_subscription FROM devices WHERE id=?').get(device.id);
+            if (current?.web_subscription !== device.web_subscription) return;
+            const status = await webPush.send(JSON.parse(device.web_subscription), {
+              id: randomUUID(), senderRole: 'Coach Comms · Test', text: 'Wrist alert test. No game call was sent.',
+              expiresAt: new Date(Date.now() + 60000).toISOString()
+            });
+            if (status === 'expired-subscription') {
+              db.prepare('UPDATE devices SET web_subscription=NULL WHERE id=? AND web_subscription=?').run(device.id, device.web_subscription);
+            }
+            if (status !== 'accepted') console.error('Wrist-alert test failed:', status);
+          } catch { console.error('Wrist-alert test failed.'); }
+        }, pushTestDelayMs);
+        timer.unref(); pushTestTimers.add(timer);
+        return reply(200, { status: 'scheduled', delaySeconds: pushTestDelayMs / 1000 });
+      }
       if (req.method === 'GET' && path === '/v1/messages') {
-        const peer = db.prepare('SELECT role,seen_at,push_token FROM devices WHERE id<>?').get(device.id);
+        const peer = db.prepare('SELECT role,seen_at,push_token,web_subscription FROM devices WHERE id<>?').get(device.id);
         const rows = db.prepare('SELECT * FROM messages WHERE sender_id=? OR recipient_id=? ORDER BY created_at DESC, rowid DESC LIMIT 50')
           .all(device.id, device.id);
         return reply(200, { messages: rows.reverse().map(model), peerRole: peer?.role ?? null,
-          peerLastSeen: peer?.seen_at ?? null, pushReady: Boolean(push.configured && peer?.push_token) });
+          peerLastSeen: peer?.seen_at ?? null,
+          notificationsReady: Boolean(webPush.configured && device.web_subscription),
+          pushReady: Boolean((push.configured && peer?.push_token) || (webPush.configured && peer?.web_subscription)) });
       }
       if (req.method === 'POST' && path === '/v1/messages') {
         rate(`send:${device.id}`, 30);
@@ -162,7 +223,17 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
             now.toISOString(), expires.toISOString(), 'pending');
         const row = db.prepare('SELECT * FROM messages WHERE id=?').get(data.id);
         // Persist before notifying; a push failure never loses the message.
-        Promise.resolve().then(() => push.send(peer.push_token, model(row))).then(status => {
+        Promise.resolve().then(async () => {
+          const results = await Promise.all([
+            push.send(peer.push_token, model(row)),
+            peer.web_subscription ? webPush.send(JSON.parse(peer.web_subscription), model(row)) : Promise.resolve('unconfigured')
+          ]);
+          if (results[1] === 'expired-subscription') {
+            // Do not delete a newer subscription that was registered while sending.
+            db.prepare('UPDATE devices SET web_subscription=NULL WHERE id=? AND web_subscription=?').run(peer.id, peer.web_subscription);
+          }
+          return results.includes('accepted') ? 'accepted' : results.every(value => value === 'unconfigured') ? 'unconfigured' : 'failed';
+        }).then(status => {
           db.prepare('UPDATE messages SET push_status=? WHERE id=?').run(status, data.id);
         }).catch(() => {
           db.prepare('UPDATE messages SET push_status=? WHERE id=?').run('failed', data.id);
@@ -186,13 +257,14 @@ export function createRelay({ databasePath = ':memory:', pairingKey, push = crea
       if (!error.status) console.error('Relay request failed:', error.message);
     }
   });
+  server.on('close', () => { for (const timer of pushTestTimers) clearTimeout(timer); pushTestTimers.clear(); });
   server.requestTimeout = 15000;
   return { server, db };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { server } = createRelay({ databasePath: process.env.DATABASE_PATH ?? 'data/coach.sqlite',
-    pairingKey: process.env.PAIRING_KEY });
+    pairingKey: process.env.PAIRING_KEY, webPush: createWebPush() });
   server.listen(Number(process.env.PORT ?? 8080), process.env.HOST ?? '127.0.0.1', () => {
     console.log(`Coach relay listening on ${server.address().port}; use an HTTPS reverse proxy.`);
   });

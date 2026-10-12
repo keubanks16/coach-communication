@@ -8,6 +8,7 @@ From the repository:
 
 ```sh
 cd relay
+npm ci
 export PAIRING_KEY='choose-your-own-long-random-secret'
 export DATABASE_PATH='data/coach.sqlite'
 npm start
@@ -26,6 +27,8 @@ comms.your-domain.com {
 The watch URL is `https://comms.your-domain.com`. A browser request to `/health` should return `{"ok":true}`. HTTP is deliberately rejected by the watch app. Do not expose the unencrypted Node port to the public internet. Pairing and device requests are rate-limited. Protect and back up the SQLite database.
 
 Alternatively, build `relay/Dockerfile`, mount a writable persistent volume at `/data` owned by the container’s node user (UID 1000), provide `PAIRING_KEY`, and put HTTPS in front of port 8080. This service does not trust client-provided forwarding headers; if a reverse proxy aggregates clients under one address, pairing attempt limits are shared.
+
+Build that Dockerfile from the repository root using `docker build -f relay/Dockerfile .`. The Home Screen version is described separately in [HOME_SCREEN.md](HOME_SCREEN.md).
 
 ## 2. Generate and open the Apple project
 
