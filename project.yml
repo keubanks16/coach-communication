@@ -1,0 +1,33 @@
+name: CoachCommunication
+options:
+  bundleIdPrefix: com.gsbaseball
+  deploymentTarget:
+    watchOS: '10.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    DEVELOPMENT_TEAM: ''
+    CODE_SIGN_STYLE: Automatic
+targets:
+  CoachCommunication:
+    type: application
+    platform: watchOS
+    sources: [WatchApp]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gsbaseball.coachcommunication
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_WKApplication: YES
+        INFOPLIST_KEY_WKWatchOnly: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Coach Comms
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
+    entitlements:
+      path: WatchApp/CoachCommunication.entitlements
+      properties:
+        aps-environment: development
+schemes:
+  CoachCommunication:
+    build:
+      targets:
+        CoachCommunication: all
